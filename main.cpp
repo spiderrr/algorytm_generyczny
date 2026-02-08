@@ -296,3 +296,152 @@ void main(int argc, char *argv[]) {
     glowny APLICATION;
     APLICATION.Run();
 }
+
+
+#include <iostream.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Definicje pomocnicze
+enum BOOL { FALSZE = 0, PRAWDA = 1 };
+typedef int* BIN;
+
+typedef struct {
+    int a;
+    int b;
+} ARKUSZ;
+
+typedef struct {
+    char arkusz;
+    int poz_x;
+    int poz_y;
+    char obrot;
+} ELEMENT;
+
+typedef ELEMENT* ELEMENTY;
+
+void Blad(char* str) { 
+    cout << str << endl; 
+    exit(0); 
+}
+
+// --- KLASA OSOBNIK ---
+
+class Osobnik {
+private:
+    BIN kod;            // Chromosom
+    int dl_kodu;        // Długość kodu binarnego
+    int il_arkuszy;     // Liczba wykorzystanych arkuszy
+    int il_elementow;   // Liczba elementów do rozmieszczenia
+    float doskonalosc;  // Funkcja celu (fitness)
+
+    void Wypelnij_pola(int il_ark, int a, int b);
+
+public:
+    Osobnik(BIN kodd, int dl_k, int il_ark, int il_el);
+    ~Osobnik();
+    BIN Kod() { return kod; }
+    float Doskonalosc() { return doskonalosc; }
+    int I1_arkuszy() { return il_arkuszy; }
+};
+
+Osobnik::Osobnik(BIN kodd, int dl_k, int il_ark, int il_el) {
+    dl_kodu = dl_k;
+    il_elementow = il_el;
+    
+    // Poprawiona alokacja chromosomu
+    kod = new int[dl_kodu];
+    if (!kod) Blad("Nie styka pamieci dla chromosomu");
+    
+    // Kopiowanie kodu
+    for(int i = 0; i < dl_kodu; i++) {
+        kod[i] = kodd[i];
+    }
+    
+    // Wstępna ocena osobnika (funkcja uproszczona w OCR)
+    il_arkuszy = il_ark;
+    doskonalosc = 0.0; 
+}
+
+Osobnik::~Osobnik() {
+    if (kod) delete[] kod;
+}
+
+// --- KLASA POPULACJA ---
+
+class Populacja {
+private:
+    int wlk_populacji;
+    Osobnik** populacja; // Tablica wskaźników do osobników
+
+public:
+    Populacja(int wlk);
+    ~Populacja();
+    
+    char* Selekcja(bool b);
+    int Selekcja(Osobnik& osbn);
+    void Przygarniecie(Osobnik* osbn, int pos);
+    
+    Osobnik* CrossingOver(Osobnik& ona, Osobnik& on);
+    Osobnik* Mutacja(Osobnik& osbn);
+};
+
+Populacja::Populacja(int wlk) {
+    wlk_populacji = wlk;
+    populacja = new Osobnik*[wlk_populacji];
+    if (!populacja) Blad("Za malo pamieci by utworzyc Populacje");
+}
+
+Populacja::~Populacja() {
+    for (int i = 0; i < wlk_populacji; i++) {
+        delete populacja[i];
+    }
+    delete[] populacja;
+}
+
+// Przykład implementacji selekcji (oczyszczony z błędów OCR)
+char* Populacja::Selekcja(bool b) {
+    int numer = random(wlk_populacji);
+    static char tab[20];
+    itoa(numer, tab, 10);
+    
+    if (b) {
+        int numer2 = random(wlk_populacji);
+        strcat(tab, ",");
+        char tab2[10];
+        itoa(numer2, tab2, 10);
+        strcat(tab, tab2);
+    }
+    return tab; 
+}
+
+void Populacja::Przygarniecie(Osobnik* osbn, int pos) {
+    if (pos >= 0 && pos < wlk_populacji) {
+        if (populacja[pos]) delete populacja[pos];
+        populacja[pos] = osbn;
+    }
+}
+
+// --- KLASA APLIKACJA ---
+
+class Aplikacja {
+public:
+    long GetPole_ark();
+    long GetPole_elem();
+    void Generacja_populacji(int rozmiar);
+};
+
+void Aplikacja::Generacja_populacji(int rozmiar) {
+    Populacja pop(rozmiar);
+    for (int i = 0; i < rozmiar; i++) {
+        // Logika generowania losowego kodu binarnego
+        int dl_k = 100; // przykładowa długość
+        BIN kod_tmp = new int[dl_k];
+        for (int j = 0; j < dl_k; j++) kod_tmp[j] = random(2);
+        
+        Osobnik* nowy = new Osobnik(kod_tmp, dl_k, 0, 10);
+        pop.Przygarniecie(nowy, i);
+        
+        delete[] kod_tmp;
+    }
+}
